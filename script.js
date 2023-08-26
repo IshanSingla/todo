@@ -1,4 +1,4 @@
-const request = indexedDB.open("TodoDB", 1);
+const request = indexedDB.open("TodoDB", 2);
 
 let db;
 
@@ -7,65 +7,156 @@ request.onsuccess = (event) => {
     loadTasks();
 };
 
-request.onupgradeneeded = (event) => {
-    db = event.target.result;
-    const objectStore = db.createObjectStore("tasks", {
-        keyPath: "id",
-        autoIncrement: true,
-    });
-    objectStore.createIndex("done", "done", { unique: false });
-    objectStore.createIndex("timestamp", "timestamp", { unique: false });
+request.onerror = (event) => {
+    console.error("Database error:", event.target.errorCode);
 };
 
-function addTask() {
-    const taskInput = document.getElementById("taskInput");
-    const taskText = taskInput.value.trim();
+request.onupgradeneeded = (event) => {
+    db = event.target.result;
+
+    if (!db.objectStoreNames.contains("tasks")) {
+        const objectStore = db.createObjectStore("tasks", {
+            keyPath: "id",
+            autoIncrement: true,
+        });
+
+        objectStore.createIndex("done", "done", { unique: false });
+        objectStore.createIndex("timestamp", "timestamp", { unique: false });
+        objectStore.createIndex("category", "category", { unique: false });
+        objectStore.createIndex("priority", "priority", { unique: false });
+    }
+};
+
+document.getElementById("todoForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const taskText = document.getElementById("taskInput").value.trim();
+    const category = document.getElementById("categorySelect").value;
+    const priority = document.getElementById("prioritySelect").value;
+
     if (taskText === "") return;
 
     const task = {
         text: taskText,
         done: false,
         timestamp: Date.now(),
+        category: category,
+        priority: priority,
     };
 
     const transaction = db.transaction("tasks", "readwrite");
     const objectStore = transaction.objectStore("tasks");
     objectStore.add(task);
 
-    taskInput.value = "";
+    e.target.reset();
     loadTasks();
-}
+});
 
 function loadTasks() {
     const taskList = document.getElementById("taskList");
+    const searchInput = document.getElementById("searchInput").value.toLowerCase();
+    const sortSelect = document.getElementById("sortSelect").value;
+
     taskList.innerHTML = "";
+
+    const tasksArray = [];
 
     const objectStore = db.transaction("tasks").objectStore("tasks");
     objectStore.openCursor().onsuccess = (event) => {
         const cursor = event.target.result;
         if (cursor) {
             const task = cursor.value;
-            const li = document.createElement("li");
-            const timeLeft = task.dueTime
-                ? (task.dueTime - Date.now()) / 1000
-                : 0;
-            const formattedTime =
-                timeLeft > 0 ? formatTime(timeLeft) : "Expired";
-            li.innerHTML = `
-                            <input type="checkbox" ${task.done ? "checked" : ""} onchange="toggleDone(${task.id}, this)">
-                            <span id="taskText-${task.id}">${task.text}</span>
-                            <input type="datetime-local" id="dueTime-${task.id}" onchange="setDueTime(${task.id}, this)" ${task.dueTime ? `value="${formatDate(task.dueTime)}"` : ""}>
-                            <span id="tine-${task.id}">Time left: ${formattedTime}</span>
-                            <div>
-                                <button onclick="editTask(${task.id})">Edit</button>
-                                <button onclick="removeTask(${task.id})">Remove</button>
-                            </div>
-                `;
-            taskList.appendChild(li);
+            if (task.text.toLowerCase().includes(searchInput)) {
+                tasksArray.push(task);
+            }
             cursor.continue();
+        } else {
+            sortTasks(tasksArray, sortSelect);
+            renderTasks(taskList, tasksArray);
         }
     };
 }
+
+function sortTasks(tasks, criteria) {
+    tasks.sort((a, b) => {
+        if (criteria === "date") {
+            return a.timestamp - b.timestamp;
+        } else if (criteria === "priority") {
+            const priorities = { low: 1, medium: 2, high: 3 };
+            return priorities[b.priority] - priorities[a.priority];
+        } else if (criteria === "category") {
+            return a.category.localeCompare(b.category);
+        }
+    });
+}
+
+function renderTasks(tableBody, tasks) {
+    tasks.forEach(task => {
+        const row = document.createElement("tr");
+        const taskTextCell = document.createElement("td");
+        const taskDoneCell = document.createElement("td");
+        const taskDueTimeCell = document.createElement("td");
+        const taskCategoryCell = document.createElement("td");  // New cell
+        const taskPriorityCell = document.createElement("td");  // New cell
+        const taskEditCell = document.createElement("td");
+        const taskDeleteCell = document.createElement("td");
+        const dueTimeCell = document.createElement("td");
+
+        taskTextCell.textContent = task.text;
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.checked = task.done;
+        checkbox.addEventListener("change", () => toggleDone(task.id, checkbox));
+        taskDoneCell.appendChild(checkbox);
+        if (task.dueTime) {
+            const timeLeft = (task.dueTime - Date.now()) / 1000;
+            const formattedTime = timeLeft > 0 ? formatTime(timeLeft) : "Completed";
+            taskDueTimeCell.textContent = formattedTime;
+        } else {
+            taskDueTimeCell.textContent = 'Not set';
+        }
+        taskDueTimeCell.id = `time-${task.id}`;
+
+        taskCategoryCell.textContent = task.category; // New line
+        taskPriorityCell.textContent = task.priority; // New line
+
+        const editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.addEventListener("click", () => editTask(task.id));
+        taskEditCell.appendChild(editButton);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", () => removeTask(task.id));
+        taskDeleteCell.appendChild(deleteButton);
+
+
+        const dueTimeInput = document.createElement("input");
+        dueTimeInput.type = "datetime-local";
+        dueTimeInput.id = `dueTime-${task.id}`;
+        dueTimeInput.setAttribute("onchange", `setDueTime(${task.id}, this)`);
+        if (task.dueTime) {
+            dueTimeInput.value = formatDate(task.dueTime);
+        }
+        dueTimeCell.appendChild(dueTimeInput);
+        row.appendChild(taskDoneCell);
+        row.appendChild(taskTextCell);
+        row.appendChild(dueTimeCell);  // New append
+        row.appendChild(taskDueTimeCell);
+        row.appendChild(taskCategoryCell);  // New append
+        row.appendChild(taskPriorityCell);  // New append
+        row.appendChild(taskEditCell);
+        row.appendChild(taskDeleteCell);
+        tableBody.appendChild(row);
+    });
+}
+
+
+
+//... The rest of your functions ...
+
+
+
 
 function formatTime(seconds) {
     const hours = Math.floor(seconds / 3600);
@@ -119,9 +210,8 @@ function editTask(taskId) {
         };
     }
 }
-
 function setDueTime(taskId, input) {
-    const dueTime = input.valueAsNumber - 1000 * 60 * 330;
+    const dueTime = new Date(input.value).getTime();
     if (!isNaN(dueTime)) {
         const transaction = db.transaction("tasks", "readwrite");
         const objectStore = transaction.objectStore("tasks");
@@ -141,23 +231,17 @@ function checkDueTasks() {
         const cursor = event.target.result;
         if (cursor) {
             const task = cursor.value;
-            const timeLeft = task.dueTime ? (task.dueTime - Date.now()) / 1000 : 0;
-            const formattedTime = timeLeft > 0 ? formatTime(timeLeft) : "Expired";
-            const taskTextSpan = document.getElementById(`tine-${task.id}`);
-            taskTextSpan.textContent = `Time left: ${formattedTime}`
-            if (!task.done && task.dueTime <= currentTime) {
-                const confirmed = confirm(
-                    `Task "${task.text}" is due now!\nMark as done?`
-                );
-                if (confirmed) {
-                    task.done = true;
-                    objectStore.put(task);
-                    loadTasks();
-                }
+            const timeLeftCell = document.getElementById(`time-${task.id}`);
+            if (task.dueTime) {
+                const timeLeft = (task.dueTime - Date.now()) / 1000;
+                const formattedTime = timeLeft > 0 ? formatTime(timeLeft) : "Completed";
+                timeLeftCell.textContent = `${formattedTime}`;
+            } else {
+                timeLeftCell.textContent = 'Not set';
             }
             cursor.continue();
         }
     };
 }
 
-setInterval(checkDueTasks, 1000); // Check for due tasks every second
+setInterval(checkDueTasks, 1000);

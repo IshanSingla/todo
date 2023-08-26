@@ -2,19 +2,66 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/images/logo.png">
+    <link rel="apple-touch-icon" href="/images/logo.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Todo App By Ishan Singla</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+
 </head>
 
 <body>
-    <h1>Todo App By Ishan Singla</h1>
-    <div class="addbar">
-        <input type="text" id="taskInput" placeholder="Enter a task" />
-        <button onclick="addTask()">Add Task</button>
+
+    <div class="background-container">
+        <div class="illustration-left"></div>
+        <div class="illustration-right"></div>
+        <div class="content">
+            <!-- Your content elements go here -->
+            <h1>Todo App</h1>
+            <form id="todoForm" class="addbar">
+                <input type="text" id="taskInput" name="taskInput" placeholder="Enter a task" required>
+                <select id="categorySelect" name="categorySelect">
+                    <option value="work">Work</option>
+                    <option value="personal" selected>Personal</option>
+                    <option value="shopping">Shopping</option>
+                </select>
+                <select id="prioritySelect" name="prioritySelect">
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+                <button type="submit">Add Task</button>
+            </form>
+            <div class="controls">
+                <input type="text" id="searchInput" placeholder="Search tasks" onkeyup="loadTasks()" />
+                Sort by: <select id="sortSelect" onchange="loadTasks()">
+                    <option value="priority">Priority</option>
+                    <option value="date">Date</option>
+                    
+                    <option value="category">Category</option>
+                </select>
+            </div>
+            <div class="table-container">
+                <table id="taskTable">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th style="width: 40%;">Task</th>
+                            <th>Due Time</th>
+                            <th>Time Left</th>
+                            <th>Category</th> <!-- New header -->
+                            <th>Priority</th> <!-- New header -->
+                            <th>Edit</th>
+                            <th>Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody id="taskList"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <ul id="taskList"></ul>
     <script src="script.js"></script>
 </body>
 
