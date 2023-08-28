@@ -127,6 +127,7 @@ function renderTasks(tableBody, tasks) {
         } else {
             taskDueTimeCell.textContent = 'Not set';
         }
+        taskDueTimeCell.id = `time-${task.id}`;
 
         taskCategoryCell.textContent = task.category; // New line
         taskPriorityCell.textContent = task.priority; // New line
