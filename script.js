@@ -101,13 +101,25 @@ function renderTasks(tableBody, tasks) {
         const taskEditCell = document.createElement("td");
         const taskDeleteCell = document.createElement("td");
         const dueTimeCell = document.createElement("td");
-
+        taskTextCell.id = `name-${task.id}`;
         taskTextCell.textContent = task.text;
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = task.done;
+        checkbox.className = "hidden-checkbox"; // Using the CSS class we provided earlier
+
+        const label = document.createElement("label");
+        label.className = "custom-checkbox";
+
+        const icon = document.createElement("span");
+        icon.className = "icon";
+
+        label.appendChild(checkbox);
+        label.appendChild(icon);
+
         checkbox.addEventListener("change", () => toggleDone(task.id, checkbox));
-        taskDoneCell.appendChild(checkbox);
+
+        taskDoneCell.appendChild(label);
         if (task.dueTime) {
             const timeLeft = (task.dueTime - Date.now()) / 1000;
             const formattedTime = timeLeft > 0 ? formatTime(timeLeft) : "Completed";
@@ -115,13 +127,13 @@ function renderTasks(tableBody, tasks) {
         } else {
             taskDueTimeCell.textContent = 'Not set';
         }
-        taskDueTimeCell.id = `time-${task.id}`;
 
         taskCategoryCell.textContent = task.category; // New line
         taskPriorityCell.textContent = task.priority; // New line
 
         const editButton = document.createElement("button");
         editButton.textContent = "Edit";
+        editButton.id=`taskText-${task.id}`
         editButton.addEventListener("click", () => editTask(task.id));
         taskEditCell.appendChild(editButton);
 
@@ -196,12 +208,13 @@ function removeTask(taskId) {
 }
 
 function editTask(taskId) {
-    const taskTextSpan = document.getElementById(`taskText-${taskId}`);
+    const transaction = db.transaction("tasks", "readwrite");
+    const objectStore = transaction.objectStore("tasks");
+
+    const taskTextSpan = document.getElementById(`name-${taskId}`);
     const newText = prompt("Edit task:", taskTextSpan.textContent);
 
     if (newText !== null && newText.trim() !== "") {
-        const transaction = db.transaction("tasks", "readwrite");
-        const objectStore = transaction.objectStore("tasks");
         objectStore.get(taskId).onsuccess = (event) => {
             const task = event.target.result;
             task.text = newText;
@@ -236,6 +249,16 @@ function checkDueTasks() {
                 const timeLeft = (task.dueTime - Date.now()) / 1000;
                 const formattedTime = timeLeft > 0 ? formatTime(timeLeft) : "Completed";
                 timeLeftCell.textContent = `${formattedTime}`;
+                if (!task.done && task.dueTime <= currentTime) {
+                    const confirmed = confirm(
+                        `Task "${task.text}" is due now!\nMark as done?`
+                    );
+                    if (confirmed) {
+                        task.done = true;
+                        objectStore.put(task);
+                        loadTasks();
+                    }
+                }
             } else {
                 timeLeftCell.textContent = 'Not set';
             }

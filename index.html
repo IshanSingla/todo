@@ -9,39 +9,62 @@
     <title>Todo App By Ishan Singla</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
-
 </head>
-
 <body>
-
     <div class="background-container">
         <div class="illustration-left"></div>
         <div class="illustration-right"></div>
         <div class="content">
             <!-- Your content elements go here -->
             <h1>Todo App</h1>
-            <form id="todoForm" class="addbar">
+            <form id="todoForm" class="addbar" style="display:flex;flex-direction: row;align-items: end; justify-content: end;">
+                <div style="display:flex;flex-direction: column;flex-grow:1;padding: 10px 15px;gap: 10px;">
+                <label>
+                    TaskInput
+                </label>
+
                 <input type="text" id="taskInput" name="taskInput" placeholder="Enter a task" required>
+            </div>
+            <div style="display:flex;flex-direction: column;flex-grow:1;padding: 10px 15px;gap: 10px">
+                <label>
+                    TaskInput
+                </label>
                 <select id="categorySelect" name="categorySelect">
                     <option value="work">Work</option>
                     <option value="personal" selected>Personal</option>
                     <option value="shopping">Shopping</option>
                 </select>
+                </div>
+                <div style="display:flex;flex-direction: column;flex-grow:1;padding: 10px 15px;gap: 10px">
+                    <label>
+                        TaskInput
+                    </label>
                 <select id="prioritySelect" name="prioritySelect">
                     <option value="high">High</option>
                     <option value="medium">Medium</option>
                     <option value="low">Low</option>
                 </select>
+                </div>
                 <button type="submit">Add Task</button>
             </form>
-            <div class="controls">
+            <div class="controls" style="display:flex;flex-direction: row;align-items: end; justify-content: end;">
+                <div style="display:flex;flex-direction: column;flex-grow:1;padding: 10px 15px;gap: 10px">
+                    <label>
+                        Search Input
+                    </label>
                 <input type="text" id="searchInput" placeholder="Search tasks" onkeyup="loadTasks()" />
-                Sort by: <select id="sortSelect" onchange="loadTasks()">
+                </div>
+                <div style="display:flex;flex-direction: column;flex-grow:1;padding: 10px 15px;gap: 10px">
+                    <label>
+                        Sort by:
+                    </label>
+                <select id="sortSelect" onchange="loadTasks()">
                     <option value="priority">Priority</option>
                     <option value="date">Date</option>
                     
                     <option value="category">Category</option>
                 </select>
+                </div>
             </div>
             <div class="table-container">
                 <table id="taskTable">
